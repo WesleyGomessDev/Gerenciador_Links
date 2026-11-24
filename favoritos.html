@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Um espaço local para pesquisar, organizar e manter seus favoritos do Firefox.">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA5klEQVR42u3bvQ3CMBAGUM/AHuxBzwTMwgiMwDxI7EFPCxVFkBXivyjYz9KVsfw9ndzEF0LB2u0Pr61UaL22FHZVlH8MXgWih+DZED2GX4zQc/ifCCOEn0UYGmCk8FGEoQFGDD9BAAAAwLgAJR8/H/fk+nx7ux4nVWvfVQByDvhdMYAa+wJoDVDjkDGAWvumIgAAAABAMcDlfFpUKQA5e+oAAAAAuAR1AAAAAFyCOgAAAAAuQR0AAAAAl6AOAODnKAAPJFoBlNQcgDdCAAAAAODBtOfyhiaMzBicMjpneNIIrSHqtsHfrQjG4rqy9pUAAAAASUVORK5CYII=">
+<title>Gerenciador de links</title>
+<style>
+/* Layout: papiro, tinta e lápis-lazúli; cada tema é um capítulo da coleção. */
+:root {
+  color-scheme: light;
+  --bg: #e9dfc9; --surface: #faf4e5; --surface-soft: #eee3ca;
+  --fg: #292f38; --muted: #706957; --line: #d4c49e;
+  --accent: #174d78; --accent-strong: #103b60; --accent-ink: #fff9e9;
+  --danger: #9d3c3e; --focus: #bd8b36;
+  --masthead: #102f4b; --masthead-fg: #f4e7c6; --masthead-line: #b99957;
+  --display: Georgia, "Times New Roman", serif;
+  --body: "Segoe UI", Inter, system-ui, sans-serif;
+  --utility: ui-monospace, "Cascadia Code", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  color-scheme: dark;
+  --bg: #161f2a; --surface: #202c39; --surface-soft: #2c3948;
+  --fg: #f0eadb; --muted: #b8b3a4; --line: #475362;
+  --accent: #dfbd72; --accent-strong: #f0d28d; --accent-ink: #202a35;
+  --danger: #ff9c91; --focus: #f0ce81;
+  --masthead: #0d1723; --masthead-fg: #f1e2bc; --masthead-line: #a8894d;
+} }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #161f2a; --surface: #202c39; --surface-soft: #2c3948;
+  --fg: #f0eadb; --muted: #b8b3a4; --line: #475362;
+  --accent: #dfbd72; --accent-strong: #f0d28d; --accent-ink: #202a35;
+  --danger: #ff9c91; --focus: #f0ce81;
+  --masthead: #0d1723; --masthead-fg: #f1e2bc; --masthead-line: #a8894d;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; padding: 0 max(18px, env(safe-area-inset-right, 0px)) 3rem max(18px, env(safe-area-inset-left, 0px)); background: var(--bg); color: var(--fg); font-family: var(--body); }
+button, input, select { font: inherit; }
+button, select { color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.topline { background:var(--masthead); color:var(--masthead-fg); border-bottom:2px solid var(--masthead-line); }
+.top-inner { max-width: 1240px; margin: auto; min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display:flex; align-items:center; gap: 11px; font: 700 1rem var(--display); letter-spacing: .02em; }
+.top-actions .btn { background:transparent; color:var(--masthead-fg); border-color:var(--masthead-line); }
+.top-actions .btn-primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.brand-mark { width: 34px; height: 34px; display:block; flex:none; border-radius: 9px; }
+.top-actions { display:flex; gap: 8px; flex-wrap:wrap; justify-content:flex-end; }
+.menu-wrap { position:relative; }
+.menu-toggle { min-width:112px; }
+.action-menu:not([hidden]) { position:absolute; z-index:20; top:calc(100% + 8px); right:0; width:min(300px,calc(100vw - 36px)); display:flex; flex-direction:column; gap:7px; padding:10px; background:var(--surface); border:1px solid var(--line); border-top:3px solid var(--accent); border-radius:8px; box-shadow:0 12px 32px #0005; }
+.action-menu .btn { width:100%; text-align:left; }
+.action-menu .btn:not(.btn-primary) { color:var(--fg); background:var(--surface); border-color:var(--line); }
+.action-menu .btn:not(.btn-primary):hover { color:var(--fg); background:var(--surface-soft); border-color:var(--accent); }
+.action-menu .btn.btn-danger { color:var(--danger); }
+main { max-width:1240px; margin: 0 auto; }
+.intro { padding: 2rem 0 1.55rem; display:flex; justify-content:space-between; align-items:end; gap:24px; }
+.eyebrow { margin:0 0 9px; color:var(--accent); font:.72rem var(--utility); font-weight:700; letter-spacing:.17em; text-transform:uppercase; }
+h1 { font: 700 clamp(2rem,4vw,3.2rem)/1.08 var(--display); letter-spacing:-.035em; margin:0; text-wrap:balance; }
+.lede { color:var(--muted); margin:.65rem 0 0; max-width:56ch; line-height:1.55; }
+.count { color:var(--muted); font: .85rem var(--utility); white-space:nowrap; padding-bottom:4px; }
+.toolbar { padding: 14px; background:var(--surface); border:1px solid var(--line); border-top:3px solid var(--accent); border-radius:3px; display:grid; grid-template-columns:minmax(200px,1fr) minmax(190px, .5fr) auto; gap:10px; }
+.field, .select { min-width:0; width:100%; min-height:44px; padding:10px 12px; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:7px; }
+.field::placeholder { color:var(--muted); }
+.btn { min-height:40px; padding:9px 13px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--fg); font-weight:650; transition:transform .15s ease, border-color .15s ease, background .15s ease; }
+.btn:hover { border-color:var(--accent); transform:translateY(-1px); }
+.btn-primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.btn-primary:hover { background:var(--accent-strong); border-color:var(--accent-strong); }
+.btn-quiet { border-color:transparent; background:transparent; }
+.btn-danger { color:var(--danger); }
+.status { min-height:24px; margin:9px 2px 0; color:var(--muted); font-size:.88rem; }
+.status[data-kind="error"] { color:var(--danger); }
+.section-head { margin:28px 0 13px; display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+h2 { margin:0; font:700 1.15rem var(--display); letter-spacing:-.02em; }
+.section-note { font-size:.83rem; color:var(--muted); }
+.results { display:flex; flex-direction:column; gap:24px; }
+.topic-section { min-width:0; }
+.topic-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; border-bottom:1px solid var(--masthead-line); padding-bottom:9px; margin-bottom:11px; }
+.topic-heading h3 { margin:0; color:var(--accent); font:700 1.2rem var(--display); letter-spacing:-.02em; text-wrap:balance; }
+.topic-count { color:var(--muted); font:.72rem var(--utility); white-space:nowrap; }
+.topic-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr)); gap:11px; }
+.card { min-width:0; background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:3px; padding:15px; display:flex; flex-direction:column; gap:12px; transition:border-color .16s ease, transform .16s ease; }
+.card:hover { border-color:var(--masthead-line); transform:translateY(-2px); }
+.card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.card h3 { margin:0; min-width:0; font:650 1rem/1.4 var(--display); overflow-wrap:anywhere; }
+.open-link { flex:none; text-decoration:none; color:var(--accent-strong); font-size:.87rem; font-weight:700; }
+.open-link:hover { text-decoration:underline; }
+.url { color:var(--muted); font: .75rem/1.45 var(--utility); overflow-wrap:anywhere; }
+.folder { align-self:flex-start; max-width:100%; padding:4px 8px; background:var(--surface-soft); border-radius:4px; color:var(--muted); font-size:.73rem; line-height:1.35; overflow-wrap:anywhere; }
+.card-actions { border-top:1px solid var(--line); padding-top:9px; display:flex; gap:5px; justify-content:flex-end; }
+.card-actions .btn { min-height:32px; padding:5px 8px; font-size:.82rem; }
+.empty { padding:34px 18px; text-align:center; border:1px dashed var(--line); border-radius:10px; color:var(--muted); }
+.empty strong { display:block; margin-bottom:6px; color:var(--fg); }
+.footer { margin-top:28px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:.82rem; line-height:1.55; }
+dialog { width:min(520px,calc(100% - 28px)); max-height:calc(100% - 28px); overflow:auto; border:1px solid var(--line); border-radius:12px; padding:0; background:var(--surface); color:var(--fg); box-shadow:0 18px 55px #0004; }
+dialog::backdrop { background:#07111699; }
+.dialog-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:17px 20px; border-bottom:1px solid var(--line); }
+.dialog-head h2 { font-size:1.25rem; }
+.form { padding:18px 20px 20px; display:grid; gap:14px; }
+.form label { display:grid; gap:6px; font-size:.87rem; font-weight:650; }
+.hint { color:var(--muted); font-size:.75rem; font-weight:400; }
+.dialog-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:4px; flex-wrap:wrap; }
+.confirm-body { padding:18px 20px; line-height:1.5; }
+@media(max-width:680px) { .top-inner { padding-block:12px; align-items:flex-start; flex-direction:column; } .top-actions { justify-content:flex-start; } .intro { align-items:flex-start; flex-direction:column; gap:12px; padding-top:1.5rem; } .toolbar { grid-template-columns:1fr; } .section-head { align-items:flex-start; flex-direction:column; gap:4px; } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
+
+/* ── View modes ── */
+.view-kanban .results { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; align-content:start; }
+.view-kanban .topic-section { display:flex; flex-direction:column; min-height:0; background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.view-kanban .topic-heading { background:var(--surface-soft); border-bottom:1px solid var(--line); padding:10px 12px; flex-shrink:0; }
+.view-kanban .topic-heading h3 { margin:0; color:var(--accent); font:700 1rem var(--display); }
+.view-kanban .topic-count { font-size:.7rem; color:var(--muted); }
+.view-kanban .topic-cards { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:8px; max-height:60vh; }
+.view-kanban .card { flex-shrink:0; }
+
+.view-list .results { display:flex; flex-direction:column; gap:0; }
+.view-list .topic-section { border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface); }
+.view-list .topic-heading { background:var(--surface-soft); border-bottom:1px solid var(--line); padding:10px 12px; }
+.view-list .topic-heading h3 { margin:0; color:var(--accent); font:700 1rem var(--display); display:flex; align-items:center; gap:8px; }
+.view-list .topic-count { margin-left:auto; font-size:.7rem; color:var(--muted); }
+.view-list .topic-cards { display:flex; flex-direction:column; }
+.view-list .card { border:none; border-top:1px solid var(--line); border-radius:0; padding:10px 12px; gap:8px; background:transparent; }
+.view-list .card:first-child { border-top:none; }
+.view-list .card:hover { transform:none; background:var(--surface-soft); }
+.view-list .card-top { flex-wrap:wrap; gap:8px; }
+.view-list .card h3 { flex:1 1 200px; font-size:.95rem; }
+.view-list .open-link { font-size:.8rem; }
+.view-list .url { font-size:.68rem; order:3; flex-basis:100%; margin-top:4px; }
+.view-list .folder { font-size:.65rem; padding:2px 6px; order:2; }
+.view-list .card-actions { border-top:none; padding-top:0; margin-left:auto; }
+
+.view-tree .results { display:flex; flex-direction:column; gap:8px; }
+.view-tree .topic-section { background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.view-tree .topic-heading { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--surface-soft); border-bottom:1px solid var(--line); cursor:pointer; user-select:none; }
+.view-tree .topic-heading:hover { background:var(--line); }
+.view-tree .topic-heading::before { content:"▶"; font-size:.6rem; color:var(--muted); transition:transform .15s ease; flex-shrink:0; }
+.view-tree .topic-heading[aria-expanded="true"]::before { transform:rotate(90deg); }
+.view-tree .topic-heading h3 { margin:0; color:var(--accent); font:700 1rem var(--display); flex:1; }
+.view-tree .topic-count { font-size:.7rem; color:var(--muted); }
+.view-tree .topic-cards { display:flex; flex-direction:column; overflow:hidden; max-height:0; transition:max-height .25s ease, padding .25s ease; }
+.view-tree .topic-cards[aria-hidden="false"] { max-height:1000px; padding:8px; }
+.view-tree .card { border:none; border-left:2px solid var(--line); border-radius:0; padding:8px 12px; margin-left:16px; background:transparent; gap:6px; }
+.view-tree .card:hover { transform:none; background:var(--surface-soft); }
+.view-tree .card h3 { font-size:.9rem; }
+.view-tree .url { font-size:.68rem; }
+.view-tree .folder { display:none; }
+
+/* Search and folder filter */
+.toolbar { grid-template-columns:minmax(200px,1fr) minmax(190px,.5fr); }
+@media(max-width:900px) { .toolbar { grid-template-columns:1fr 1fr; } }
+@media(max-width:680px) { .toolbar { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="topline"><header class="top-inner"><div class="brand"><img class="brand-mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA5klEQVR42u3bvQ3CMBAGUM/AHuxBzwTMwgiMwDxI7EFPCxVFkBXivyjYz9KVsfw9ndzEF0LB2u0Pr61UaL22FHZVlH8MXgWih+DZED2GX4zQc/ifCCOEn0UYGmCk8FGEoQFGDD9BAAAAwLgAJR8/H/fk+nx7ux4nVWvfVQByDvhdMYAa+wJoDVDjkDGAWvumIgAAAABAMcDlfFpUKQA5e+oAAAAAuAR1AAAAAFyCOgAAAAAuQR0AAAAAl6AOAODnKAAPJFoBlNQcgDdCAAAAAODBtOfyhiaMzBicMjpneNIIrSHqtsHfrQjG4rqy9pUAAAAASUVORK5CYII=" alt=""><span>Gerenciador de links</span></div><div class="top-actions"><div class="menu-wrap"><button class="btn menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="actionMenu" aria-label="Abrir menu">☰ Menu</button><div class="action-menu" id="actionMenu" hidden><button class="btn" id="themeButton" type="button" aria-label="Alternar tema claro e escuro">Tema</button><button class="btn" id="importButton" type="button">Importar HTML</button><input id="importFile" type="file" accept=".html,text/html" hidden><button class="btn btn-danger" id="removeImportedButton" type="button">Remover importados</button><button class="btn" id="categoriesButton" type="button">Editar categorias</button><button class="btn btn-primary" id="addButton" type="button">＋ Adicionar favorito</button><button class="btn btn-primary" id="exportButton" type="button">Baixar HTML atualizado</button></div></div></div></header></div>
+<main>
+<section class="intro" aria-labelledby="pageTitle"><div><p class="eyebrow">Mouseion · arquivo pessoal</p><h1 id="pageTitle">Gerenciador de links</h1><p class="lede">Uma coleção local em capítulos, organizada pelos temas das suas pastas. Pesquise no acervo ou navegue pelas estantes.</p></div><div class="count" id="count" aria-live="polite"></div></section>
+<section aria-label="Pesquisar e filtrar favoritos"><div class="toolbar"><label><span class="sr-only">Pesquisar por título ou URL</span><input class="field" id="search" type="search" placeholder="Buscar título ou endereço…" autocomplete="off"></label><label><span class="sr-only">Filtrar por pasta</span><select class="select" id="folderFilter"><option value="">Todas as pastas</option></select></label></div><p class="status" id="status" role="status" aria-live="polite"></p></section>
+<section aria-labelledby="listTitle"><div class="section-head"><h2 id="listTitle">Favoritos por tema</h2><span class="section-note" id="resultNote"></span></div><div class="results" id="bookmarkGrid"></div><div class="empty" id="empty" hidden><strong>Nenhum favorito encontrado.</strong>Limpe a pesquisa ou escolha outra pasta.</div></section>
+<footer class="footer">Importados do arquivo de favoritos do Firefox. Nenhum serviço externo é usado. Use <strong>Baixar HTML atualizado</strong> para guardar as alterações em um novo arquivo; mantenha o original como cópia de segurança.</footer>
+</main>
+<dialog id="editDialog" aria-labelledby="dialogTitle"><div class="dialog-head"><h2 id="dialogTitle">Adicionar favorito</h2><button class="btn btn-quiet" id="closeDialog" type="button" aria-label="Fechar formulário">Fechar</button></div><form class="form" id="bookmarkForm"><input id="bookmarkId" type="hidden"><label for="titleInput">Título<input class="field" id="titleInput" required maxlength="300" autocomplete="off"></label><label for="urlInput">URL<input class="field" id="urlInput" type="url" required placeholder="https://exemplo.com" autocomplete="url"><span class="hint">Use um endereço http:// ou https:// válido.</span></label><label for="folderSelect">Pasta ou categoria <span class="hint">(opcional)</span><select class="select" id="folderSelect"><option value="">Sem categoria</option></select><input class="field" id="folderInput" maxlength="180" placeholder="Digite a nova categoria" autocomplete="off" hidden></label><div class="dialog-actions"><button class="btn" id="cancelDialog" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Salvar favorito</button></div></form></dialog>
+<dialog id="categoryDialog" aria-labelledby="categoryTitle"><div class="dialog-head"><h2 id="categoryTitle">Editar categorias</h2><button class="btn btn-quiet" id="closeCategories" type="button" aria-label="Fechar edição de categorias">Fechar</button></div><form class="form" id="categoryForm"><label for="categorySelect">Categoria existente<select class="select" id="categorySelect" required></select></label><label for="categoryName">Novo nome<input class="field" id="categoryName" maxlength="180" required autocomplete="off" placeholder="Digite o novo nome"></label><div class="dialog-actions"><button class="btn" id="cancelCategories" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Renomear categoria</button></div></form></dialog>
+<dialog id="removeImportedDialog" aria-labelledby="removeImportedTitle"><div class="dialog-head"><h2 id="removeImportedTitle">Remover favoritos importados?</h2><button class="btn btn-quiet" id="closeRemoveImported" type="button" aria-label="Fechar confirmação">Fechar</button></div><div class="confirm-body"><p id="removeImportedMessage"></p><div class="dialog-actions"><button class="btn" id="cancelRemoveImported" type="button">Cancelar</button><button class="btn btn-danger" id="confirmRemoveImported" type="button">Remover importados</button></div></div></dialog>
+<dialog id="deleteDialog" aria-labelledby="deleteTitle"><div class="dialog-head"><h2 id="deleteTitle">Excluir favorito?</h2><button class="btn btn-quiet" id="closeDelete" type="button" aria-label="Fechar confirmação">Fechar</button></div><div class="confirm-body"><p id="deleteMessage"></p><div class="dialog-actions"><button class="btn" id="keepBookmark" type="button">Manter favorito</button><button class="btn btn-danger" id="confirmDelete" type="button">Excluir</button></div></div></dialog>
+<script type="application/json" id="bookmark-data">[]</script>
+<script>
+"use strict";
+const DATA_NODE = document.getElementById("bookmark-data");
+const STORAGE_KEY = "meu-hub-favoritos-v1";
+const INITIAL = JSON.parse(DATA_NODE.textContent);
+const INITIAL_SIGNATURE = JSON.stringify(INITIAL);
+let bookmarks = INITIAL;
+let pendingDelete = null;
+const $ = (id) => document.getElementById(id);
+function normalizeUrl(value) {
+  const parsed = new URL(value.trim());
+  if (!["http:", "https:"].includes(parsed.protocol) || !parsed.hostname) throw new Error("Informe uma URL completa iniciada por http:// ou https://.");
+  return parsed.href;
+}
+function duplicateKey(value) {
+  try { return normalizeUrl(value); } catch { return value.trim(); }
+}
+function setStatus(message, kind="info") { const el=$("status"); el.textContent=message; el.dataset.kind=kind; }
+function persistDraft() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({base:INITIAL_SIGNATURE,bookmarks})); return true; } catch { return false; } }
+function loadDraft() {
+  try {
+    const saved=localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const parsed=JSON.parse(saved);
+    if (parsed?.base===INITIAL_SIGNATURE && Array.isArray(parsed.bookmarks) && parsed.bookmarks.every(x => x && typeof x.title==="string" && typeof x.url==="string" && typeof x.folder==="string")) bookmarks=dedupe(parsed.bookmarks);
+  } catch { /* O HTML incorporado segue disponível mesmo sem armazenamento local. */ }
+}
+function dedupe(list) { const seen=new Set(); return list.filter(x => { const key=duplicateKey(x.url); if (seen.has(key)) return false; seen.add(key); return true; }); }
+function cleanFolder(value) { const parts=value.split(" / ").map(x=>x.trim()).filter(Boolean); return parts.filter((part,index)=>part!==parts[index-1]).join(" / "); }
+function themeFor(item) {
+  const parts=cleanFolder(item.folder).split(" / ").filter(Boolean);
+  if(!parts.length) return "Firefox";
+  if(parts[0]==="Outros favoritos") return "Outros favoritos";
+  const thematic=parts.filter(part=>part!=="Barra de favoritos");
+  return thematic[0]||"Geral";
+}
+function folders() { return [...new Set(bookmarks.map(x=>x.folder.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR")); }
+function refreshFilter() {
+  const select=$("folderFilter"), selected=select.value;
+  select.replaceChildren(new Option("Todas as pastas", ""));
+  folders().forEach(folder=>select.add(new Option(cleanFolder(folder),folder)));
+  if ([...select.options].some(o=>o.value===selected)) select.value=selected;
+}
+function render() {
+  refreshFilter();
+  document.body.classList.add("view-tree");
+
+  const query=$("search").value.trim().toLocaleLowerCase("pt-BR"), folder=$("folderFilter").value;
+  const matches=bookmarks.map((item,index)=>({...item,index,theme:themeFor(item)})).filter(x=>(!folder || x.folder===folder) && (!query || (x.title+" "+x.url).toLocaleLowerCase("pt-BR").includes(query)));
+  const grid=$("bookmarkGrid"); grid.replaceChildren();
+  const groups=new Map();
+  matches.forEach(item=>{if(!groups.has(item.theme))groups.set(item.theme,[]);groups.get(item.theme).push(item);});
+
+  const sortedThemes = [...groups.entries()].sort(([a],[b])=>a.localeCompare(b,"pt-BR"));
+
+  renderTree(grid, sortedThemes);
+
+  $("count").textContent=`${bookmarks.length} ${bookmarks.length===1?"favorito":"favoritos"}`;
+  $("resultNote").textContent=`Exibindo ${matches.length} de ${bookmarks.length} • ${groups.size} ${groups.size===1?"tema":"temas"}`;
+  $("empty").hidden=matches.length!==0; grid.hidden=matches.length===0;
+}
+
+function createCard(item) {
+  const card=document.createElement("article"); card.className="card";
+  const top=document.createElement("div"); top.className="card-top";
+  const title=document.createElement("h3"); title.textContent=item.title;
+  const link=document.createElement("a"); link.className="open-link"; link.href=item.url; link.target="_blank"; link.rel="noopener noreferrer"; link.textContent="Abrir ↗"; link.setAttribute("aria-label",`Abrir ${item.title} em nova aba`);
+  top.append(title,link); card.append(top);
+  const address=document.createElement("div"); address.className="url"; address.textContent=item.url; card.append(address);
+  if(item.folder){const badge=document.createElement("span"); badge.className="folder"; badge.textContent=cleanFolder(item.folder); card.append(badge);}
+  const actions=document.createElement("div"); actions.className="card-actions";
+  const edit=document.createElement("button"); edit.className="btn"; edit.type="button"; edit.textContent="Editar"; edit.setAttribute("aria-label",`Editar ${item.title}`); edit.addEventListener("click",()=>openEdit(item.index));
+  const remove=document.createElement("button"); remove.className="btn btn-danger"; remove.type="button"; remove.textContent="Excluir"; remove.setAttribute("aria-label",`Excluir ${item.title}`); remove.addEventListener("click",()=>openDelete(item.index));
+  actions.append(edit,remove); card.append(actions);
+  return card;
+}
+
+function renderCards(grid, themes) {
+  themes.forEach(([theme,items])=>{
+    const section=document.createElement("section"); section.className="topic-section";
+    const heading=document.createElement("div"); heading.className="topic-heading";
+    const label=document.createElement("h3"); label.textContent=theme;
+    const total=document.createElement("span"); total.className="topic-count"; total.textContent=`${items.length} ${items.length===1?"link":"links"}`;
+    heading.append(label,total); section.append(heading);
+    const cards=document.createElement("div"); cards.className="topic-cards";
+    items.forEach(item=>cards.append(createCard(item)));
+    section.append(cards); grid.append(section);
+  });
+}
+
+function renderKanban(grid, themes) {
+  themes.forEach(([theme,items])=>{
+    const section=document.createElement("section"); section.className="topic-section";
+    const heading=document.createElement("div"); heading.className="topic-heading";
+    heading.setAttribute("role","heading"); heading.setAttribute("aria-level","3");
+    const label=document.createElement("h3"); label.textContent=theme;
+    const total=document.createElement("span"); total.className="topic-count"; total.textContent=`${items.length} ${items.length===1?"link":"links"}`;
+    heading.append(label,total); section.append(heading);
+    const cards=document.createElement("div"); cards.className="topic-cards"; cards.setAttribute("role","list");
+    items.forEach(item=>cards.append(createCard(item)));
+    section.append(cards); grid.append(section);
+  });
+}
+
+function renderList(grid, themes) {
+  themes.forEach(([theme,items])=>{
+    const section=document.createElement("section"); section.className="topic-section";
+    const heading=document.createElement("div"); heading.className="topic-heading";
+    heading.setAttribute("role","heading"); heading.setAttribute("aria-level","3");
+    const label=document.createElement("h3"); label.textContent=theme;
+    const total=document.createElement("span"); total.className="topic-count"; total.textContent=`${items.length} ${items.length===1?"link":"links"}`;
+    heading.append(label,total); section.append(heading);
+    const cards=document.createElement("div"); cards.className="topic-cards"; cards.setAttribute("role","list");
+    items.forEach(item=>cards.append(createCard(item)));
+    section.append(cards); grid.append(section);
+  });
+}
+
+function renderTree(grid, themes) {
+  themes.forEach(([theme,items])=>{
+    const section=document.createElement("section"); section.className="topic-section";
+    const heading=document.createElement("div"); heading.className="topic-heading";
+    heading.setAttribute("role","button"); heading.setAttribute("aria-expanded","false"); heading.setAttribute("aria-controls",`tree-${theme.replace(/\s+/g,"-")}`); heading.tabIndex=0;
+    const label=document.createElement("h3"); label.textContent=theme;
+    const total=document.createElement("span"); total.className="topic-count"; total.textContent=`${items.length} ${items.length===1?"link":"links"}`;
+    heading.append(label,total); section.append(heading);
+    const cards=document.createElement("div"); cards.className="topic-cards"; cards.id=`tree-${theme.replace(/\s+/g,"-")}`; cards.setAttribute("role","list"); cards.setAttribute("aria-hidden","true");
+    items.forEach(item=>cards.append(createCard(item)));
+    section.append(cards); grid.append(section);
+
+    const toggle = () => {
+      const expanded = heading.getAttribute("aria-expanded") === "true";
+      heading.setAttribute("aria-expanded", String(!expanded));
+      cards.setAttribute("aria-hidden", String(expanded));
+    };
+    heading.addEventListener("click", toggle);
+    heading.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+  });
+}
+function refreshFolderChoices(selected="") {
+  const select=$("folderSelect");
+  select.replaceChildren(new Option("Sem categoria", ""));
+  folders().forEach(folder=>select.add(new Option(cleanFolder(folder),folder)));
+  select.add(new Option("＋ Criar nova categoria…", "__new__"));
+  select.value=folders().includes(selected)?selected:"";
+  $("folderInput").hidden=true;
+  $("folderInput").value="";
+}
+function openEdit(index=null) {
+  $("bookmarkForm").reset(); $("bookmarkId").value=index===null?"":String(index);
+  $("dialogTitle").textContent=index===null?"Adicionar favorito":"Editar favorito";
+  const item=index===null?null:bookmarks[index];
+  refreshFolderChoices(item?.folder||"");
+  if(item){$("titleInput").value=item.title; $("urlInput").value=item.url;}
+  $("editDialog").showModal(); $("titleInput").focus();
+}
+function openCategories() {
+  const select=$("categorySelect"), existing=folders();
+  select.replaceChildren(...existing.map(folder=>new Option(cleanFolder(folder),folder)));
+  if(!existing.length){setStatus("Ainda não há categorias para editar. Crie uma ao adicionar ou editar um favorito.","error");return;}
+  $("categoryName").value=select.value;
+  $("categoryDialog").showModal();
+}
+function openDelete(index) { pendingDelete=index; $("deleteMessage").textContent=`“${bookmarks[index].title}” será removido deste hub. Você poderá recuperar o favorito se ainda não tiver baixado uma nova versão do HTML.`; $("deleteDialog").showModal(); $("confirmDelete").focus(); }
+function saveChanges(message) { const saved=persistDraft(); render(); setStatus(saved?`${message} Baixe o HTML atualizado para tornar a mudança permanente.`:`${message} O armazenamento local está indisponível; baixe o HTML atualizado agora para não perder a mudança.` , saved?"info":"error"); }
+function setActionMenu(open) {
+  const button=$("menuToggle"), menu=$("actionMenu");
+  menu.hidden=!open; button.setAttribute("aria-expanded",String(open));
+  button.setAttribute("aria-label",open?"Fechar menu":"Abrir menu");
+}
+$("menuToggle").addEventListener("click",()=>setActionMenu($("actionMenu").hidden));
+$("actionMenu").addEventListener("click",event=>{if(event.target.closest("button"))setActionMenu(false);});
+document.addEventListener("click",event=>{if(!event.target.closest(".menu-wrap"))setActionMenu(false);});
+document.addEventListener("keydown",event=>{if(event.key==="Escape")setActionMenu(false);});
+$("addButton").addEventListener("click",()=>openEdit());
+$("categoriesButton").addEventListener("click",openCategories);
+function importedBookmark(item) { return item.imported===true || item.folder==="Importados" || item.folder.startsWith("Importados / "); }
+$("removeImportedButton").addEventListener("click",()=>{
+  const count=bookmarks.filter(importedBookmark).length;
+  if(!count){setStatus("Não há favoritos importados para remover.");return;}
+  $("removeImportedMessage").textContent=`Esta ação removerá ${count} favorito(s) importado(s). Ela não pode ser desfeita depois de baixar o HTML atualizado.`;
+  $("removeImportedDialog").showModal();
+});
+$("confirmRemoveImported").addEventListener("click",()=>{
+  const before=bookmarks.length;
+  bookmarks=bookmarks.filter(item=>!importedBookmark(item));
+  $("removeImportedDialog").close();
+  saveChanges(`${before-bookmarks.length} favorito(s) importado(s) removido(s).`);
+});
+$("closeRemoveImported").addEventListener("click",()=>$("removeImportedDialog").close());
+$("cancelRemoveImported").addEventListener("click",()=>$("removeImportedDialog").close());
+$("closeCategories").addEventListener("click",()=>$("categoryDialog").close());
+$("cancelCategories").addEventListener("click",()=>$("categoryDialog").close());
+$("categorySelect").addEventListener("change",()=>$("categoryName").value=$("categorySelect").value);
+$("categoryForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  const oldName=$("categorySelect").value, newName=$("categoryName").value.trim();
+  if(!oldName||!newName){setStatus("Escolha uma categoria e informe o novo nome.","error");return;}
+  if(oldName===newName){$("categoryDialog").close();return;}
+  bookmarks.forEach(item=>{
+    if(oldName==="Importados" && (item.folder===oldName||item.folder.startsWith(oldName+" / "))) item.imported=true;
+    if(item.folder===oldName)item.folder=newName;
+    else if(item.folder.startsWith(oldName+" / "))item.folder=newName+item.folder.slice(oldName.length);
+  });
+  $("categoryDialog").close();
+  saveChanges(`Categoria “${oldName}” renomeada para “${newName}”.`);
+});
+$("folderSelect").addEventListener("change",()=>{
+  const custom=$("folderSelect").value==="__new__", input=$("folderInput");
+  input.hidden=!custom;
+  if(custom) input.focus();
+});
+$("search").addEventListener("input",render); $("folderFilter").addEventListener("change",render);
+$("bookmarkForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  const title=$("titleInput").value.trim(), folder=$("folderSelect").value==="__new__"?$("folderInput").value.trim():$("folderSelect").value, id=$("bookmarkId").value;
+  let url; try { url=normalizeUrl($("urlInput").value); } catch(error) { setStatus(error.message,"error"); $("urlInput").focus(); return; }
+  if(!title){setStatus("Informe um título para o favorito.","error");$("titleInput").focus();return;}
+  const existing=bookmarks.findIndex((x,i)=>duplicateKey(x.url)===duplicateKey(url) && String(i)!==id);
+  if(existing!==-1){setStatus(`Esse endereço já existe como “${bookmarks[existing].title}”. Cada URL pode aparecer apenas uma vez.`,"error");$("urlInput").focus();return;}
+  if(id==="") bookmarks.push({title,url,folder}); else bookmarks[Number(id)]={title,url,folder};
+  $("editDialog").close(); saveChanges(id===""?"Favorito adicionado.":"Favorito atualizado.");
+});
+$("confirmDelete").addEventListener("click",()=>{if(pendingDelete===null)return; bookmarks.splice(pendingDelete,1); pendingDelete=null; $("deleteDialog").close(); saveChanges("Favorito excluído.");});
+$("keepBookmark").addEventListener("click",()=>$("deleteDialog").close()); $("closeDelete").addEventListener("click",()=>$("deleteDialog").close());
+$("cancelDialog").addEventListener("click",()=>$("editDialog").close()); $("closeDialog").addEventListener("click",()=>$("editDialog").close());
+$("exportButton").addEventListener("click",()=>{
+  const fresh=dedupe(bookmarks), json=JSON.stringify(fresh,null,2).replace(/</g,"\\u003c");
+  const updated=document.documentElement.outerHTML.replace(/(<script type="application\/json" id="bookmark-data">)[\s\S]*?(<\/script>)/,(_,start,end)=>start+json+end);
+  const blob=new Blob(["<!doctype html>\n"+updated],{type:"text/html;charset=utf-8"});
+  const url=URL.createObjectURL(blob), anchor=document.createElement("a"); anchor.href=url; anchor.download="favoritos-atualizados.html"; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setStatus("Cópia atualizada gerada. Confira a pasta de downloads.");
+});
+$("importButton").addEventListener("click",()=>$("importFile").click());
+function importedFolderFor(anchor) {
+  const path=[];
+  let list=anchor.closest("dl");
+  while(list) {
+    let heading=null;
+    const parent=list.parentElement;
+    const owningDt=parent?.closest("dt");
+    if(owningDt?.contains(list)) heading=owningDt.querySelector("h3");
+    if(!heading) {
+      let previous=list.previousElementSibling;
+      while(previous && !heading) {
+        heading=previous.matches("h3")?previous:previous.querySelector("h3");
+        previous=previous.previousElementSibling;
+      }
+    }
+    if(heading?.textContent.trim()) path.unshift(heading.textContent.trim());
+    list=parent?.closest("dl")||null;
+  }
+  return cleanFolder(path.join(" / "))||"Importados";
+}
+async function readImportFile(file) {
+  if (typeof file.text === "function") return file.text();
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||""));
+    reader.onerror=()=>reject(reader.error||new Error("Falha ao ler o arquivo."));
+    reader.readAsText(file);
+  });
+}
+$("importFile").addEventListener("change",async event=>{
+  const file=event.target.files?.[0]; if(!file)return;
+  try {
+    const text=await readImportFile(file), doc=new DOMParser().parseFromString(text,"text/html"), imported=[];
+    doc.querySelectorAll("a[href]").forEach(a=>{
+      const title=a.textContent.trim(), rawUrl=a.getAttribute("href")?.trim();
+      if(!title||!rawUrl)return;
+      try { imported.push({title,url:normalizeUrl(new URL(rawUrl,doc.baseURI).href),folder:importedFolderFor(a),imported:true}); } catch { /* Ignora entradas sem URL web válida. */ }
+    });
+    if(!imported.length) {
+      setStatus("Nenhum favorito com URL http:// ou https:// foi encontrado nesse HTML. Escolha o arquivo de exportação de favoritos do navegador.","error");
+    } else {
+      const before=bookmarks.length; bookmarks=dedupe([...bookmarks,...imported]);
+      saveChanges(`${bookmarks.length-before} favorito(s) importado(s); endereços repetidos ou inválidos foram ignorados.`);
+    }
+  } catch { setStatus("Não foi possível ler esse arquivo HTML. Escolha uma exportação de favoritos do navegador.","error"); }
+  event.target.value="";
+});
+$("themeButton").addEventListener("click",()=>{const root=document.documentElement, dark=root.dataset.theme==="dark" || (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches); root.dataset.theme=dark?"light":"dark"; try{localStorage.setItem("meu-hub-tema",root.dataset.theme);}catch{} });
+try { const theme=localStorage.getItem("meu-hub-tema"); if(theme==="dark"||theme==="light") document.documentElement.dataset.theme=theme; } catch {}
+loadDraft(); render();
+if(bookmarks.length!==INITIAL.length) setStatus("Rascunho local carregado. Baixe o HTML atualizado para incorporar as alterações no arquivo.");
+</script>
+</body>
+</html>
