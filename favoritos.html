@@ -36,6 +36,7 @@
   --masthead: #0d1723; --masthead-fg: #f1e2bc; --masthead-line: #a8894d;
 }
 * { box-sizing: border-box; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 body { margin: 0; min-height: 100vh; padding: 0 max(18px, env(safe-area-inset-right, 0px)) 3rem max(18px, env(safe-area-inset-left, 0px)); background: var(--bg); color: var(--fg); font-family: var(--body); }
 button, input, select { font: inherit; }
 button, select { color: inherit; }
@@ -51,9 +52,8 @@ button { cursor: pointer; }
 .menu-wrap { position:relative; }
 .menu-toggle { min-width:112px; }
 .action-menu:not([hidden]) { position:absolute; z-index:20; top:calc(100% + 8px); right:0; width:min(300px,calc(100vw - 36px)); display:flex; flex-direction:column; gap:7px; padding:10px; background:var(--surface); border:1px solid var(--line); border-top:3px solid var(--accent); border-radius:8px; box-shadow:0 12px 32px #0005; }
-.action-menu .btn { width:100%; text-align:left; }
-.action-menu .btn:not(.btn-primary) { color:var(--fg); background:var(--surface); border-color:var(--line); }
-.action-menu .btn:not(.btn-primary):hover { color:var(--fg); background:var(--surface-soft); border-color:var(--accent); }
+.action-menu .btn { width:100%; text-align:left; color:var(--fg); background:var(--surface); border-color:var(--line); }
+.action-menu .btn:hover { color:var(--fg); background:var(--surface-soft); border-color:var(--accent); }
 .action-menu .btn.btn-danger { color:var(--danger); }
 main { max-width:1240px; margin: 0 auto; }
 .intro { padding: 2rem 0 1.55rem; display:flex; justify-content:space-between; align-items:end; gap:24px; }
@@ -145,21 +145,30 @@ dialog::backdrop { background:#07111699; }
 .view-tree .card:hover { transform:none; background:var(--surface-soft); }
 .view-tree .card h3 { font-size:.9rem; }
 .view-tree .url { font-size:.68rem; }
-.view-tree .folder { display:none; }
+.view-tree .folder { display:inline-block; margin:0 0 0 16px; }
 
-/* Search and folder filter */
-.toolbar { grid-template-columns:minmax(200px,1fr) minmax(190px,.5fr); }
+/* Busca e filtro por pasta */
+.search-wrap { position:relative; min-width:0; }
+.search-wrap .field { padding-right:46px; }
+.search-clear { position:absolute; top:50%; right:7px; transform:translateY(-50%); width:34px; min-height:34px; padding:0; border:0; border-radius:6px; background:transparent; color:var(--muted); font-size:1.3rem; line-height:1; }
+.search-clear:hover { background:var(--surface-soft); color:var(--fg); }
+.search-help { margin:7px 2px 0; color:var(--muted); font-size:.78rem; }
+.search-help kbd { padding:1px 5px; border:1px solid var(--line); border-radius:4px; background:var(--surface); font: .72rem var(--utility); }
+mark.match { padding:0 .08em; border-radius:2px; background:#f4d77e; color:#292f38; }
+@media(prefers-color-scheme:dark) { :root:not([data-theme="light"]) mark.match { background:#725d2f; color:#fff5d6; } }
+:root[data-theme="dark"] mark.match { background:#725d2f; color:#fff5d6; }
+.toolbar { grid-template-columns:minmax(230px,1.4fr) repeat(2,minmax(140px,.7fr)); }
 @media(max-width:900px) { .toolbar { grid-template-columns:1fr 1fr; } }
 @media(max-width:680px) { .toolbar { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
-<div class="topline"><header class="top-inner"><div class="brand"><img class="brand-mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA5klEQVR42u3bvQ3CMBAGUM/AHuxBzwTMwgiMwDxI7EFPCxVFkBXivyjYz9KVsfw9ndzEF0LB2u0Pr61UaL22FHZVlH8MXgWih+DZED2GX4zQc/ifCCOEn0UYGmCk8FGEoQFGDD9BAAAAwLgAJR8/H/fk+nx7ux4nVWvfVQByDvhdMYAa+wJoDVDjkDGAWvumIgAAAABAMcDlfFpUKQA5e+oAAAAAuAR1AAAAAFyCOgAAAAAuQR0AAAAAl6AOAODnKAAPJFoBlNQcgDdCAAAAAODBtOfyhiaMzBicMjpneNIIrSHqtsHfrQjG4rqy9pUAAAAASUVORK5CYII=" alt=""><span>Gerenciador de links</span></div><div class="top-actions"><div class="menu-wrap"><button class="btn menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="actionMenu" aria-label="Abrir menu">☰ Menu</button><div class="action-menu" id="actionMenu" hidden><button class="btn" id="themeButton" type="button" aria-label="Alternar tema claro e escuro">Tema</button><button class="btn" id="importButton" type="button">Importar HTML</button><input id="importFile" type="file" accept=".html,text/html" hidden><button class="btn btn-danger" id="removeImportedButton" type="button">Remover importados</button><button class="btn" id="categoriesButton" type="button">Editar categorias</button><button class="btn btn-primary" id="addButton" type="button">＋ Adicionar favorito</button><button class="btn btn-primary" id="exportButton" type="button">Baixar HTML atualizado</button></div></div></div></header></div>
+<div class="topline"><header class="top-inner"><div class="brand"><img class="brand-mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAA5klEQVR42u3bvQ3CMBAGUM/AHuxBzwTMwgiMwDxI7EFPCxVFkBXivyjYz9KVsfw9ndzEF0LB2u0Pr61UaL22FHZVlH8MXgWih+DZED2GX4zQc/ifCCOEn0UYGmCk8FGEoQFGDD9BAAAAwLgAJR8/H/fk+nx7ux4nVWvfVQByDvhdMYAa+wJoDVDjkDGAWvumIgAAAABAMcDlfFpUKQA5e+oAAAAAuAR1AAAAAFyCOgAAAAAuQR0AAAAAl6AOAODnKAAPJFoBlNQcgDdCAAAAAODBtOfyhiaMzBicMjpneNIIrSHqtsHfrQjG4rqy9pUAAAAASUVORK5CYII=" alt=""><span>Gerenciador de links</span></div><div class="top-actions"><div class="menu-wrap"><button class="btn menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="actionMenu" aria-label="Abrir menu">☰ Menu</button><div class="action-menu" id="actionMenu" hidden><button class="btn" id="themeButton" type="button" aria-label="Alternar tema claro e escuro">Tema</button><button class="btn" id="importButton" type="button">Importar favoritos HTML</button><input id="importFile" type="file" accept=".html,text/html" hidden><button class="btn btn-danger" id="removeImportedButton" type="button">Remover importados</button><button class="btn" id="categoriesButton" type="button">Editar categorias</button><button class="btn btn-primary" id="addButton" type="button">＋ Adicionar favorito</button><button class="btn" id="exportBookmarksButton" type="button">Exportar para Chrome / Firefox</button><button class="btn btn-primary" id="exportButton" type="button">Baixar cópia do gerenciador</button></div></div></div></header></div>
 <main>
 <section class="intro" aria-labelledby="pageTitle"><div><p class="eyebrow">Mouseion · arquivo pessoal</p><h1 id="pageTitle">Gerenciador de links</h1><p class="lede">Uma coleção local em capítulos, organizada pelos temas das suas pastas. Pesquise no acervo ou navegue pelas estantes.</p></div><div class="count" id="count" aria-live="polite"></div></section>
-<section aria-label="Pesquisar e filtrar favoritos"><div class="toolbar"><label><span class="sr-only">Pesquisar por título ou URL</span><input class="field" id="search" type="search" placeholder="Buscar título ou endereço…" autocomplete="off"></label><label><span class="sr-only">Filtrar por pasta</span><select class="select" id="folderFilter"><option value="">Todas as pastas</option></select></label></div><p class="status" id="status" role="status" aria-live="polite"></p></section>
-<section aria-labelledby="listTitle"><div class="section-head"><h2 id="listTitle">Favoritos por tema</h2><span class="section-note" id="resultNote"></span></div><div class="results" id="bookmarkGrid"></div><div class="empty" id="empty" hidden><strong>Nenhum favorito encontrado.</strong>Limpe a pesquisa ou escolha outra pasta.</div></section>
-<footer class="footer">Importados do arquivo de favoritos do Firefox. Nenhum serviço externo é usado. Use <strong>Baixar HTML atualizado</strong> para guardar as alterações em um novo arquivo; mantenha o original como cópia de segurança.</footer>
+<section aria-label="Pesquisar e filtrar favoritos"><div class="toolbar"><div class="search-wrap"><label for="search"><span class="sr-only">Pesquisar favoritos por título, endereço ou pasta</span></label><input class="field" id="search" type="search" placeholder="Buscar título, endereço ou pasta…" autocomplete="off" aria-describedby="searchHelp"><button class="search-clear" id="clearSearch" type="button" aria-label="Limpar pesquisa" title="Limpar pesquisa" hidden>×</button></div><label><span class="sr-only">Filtrar por pasta</span><select class="select" id="folderFilter"><option value="">Todas as pastas</option></select></label><label><span class="sr-only">Filtro rápido</span><select class="select" id="quickFilter"><option value="">Todos os favoritos</option><option value="uncategorized">Sem categoria</option><option value="imported">Importados</option></select></label></div><p class="search-help" id="searchHelp">A busca ignora acentos e aceita várias palavras. Atalho: <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>K</kbd> para pesquisar; <kbd>Esc</kbd> para limpar.</p><p class="status" id="status" role="status" aria-live="polite"></p></section>
+<section aria-labelledby="listTitle"><div class="section-head"><h2 id="listTitle">Favoritos por tema</h2><span class="section-note" id="resultNote"></span></div><div class="results" id="bookmarkGrid"></div><div class="empty" id="empty" hidden><strong id="emptyTitle">Nenhum favorito encontrado.</strong><span id="emptyMessage">Limpe a pesquisa ou ajuste os filtros.</span></div></section>
+<footer class="footer">Importados do arquivo de favoritos do Firefox. Nenhum serviço externo é usado. Use <strong>Baixar cópia do gerenciador</strong> para salvar alterações nesta página ou <strong>Exportar para Chrome / Firefox</strong> para criar um arquivo de favoritos compatível.</footer>
 </main>
 <dialog id="editDialog" aria-labelledby="dialogTitle"><div class="dialog-head"><h2 id="dialogTitle">Adicionar favorito</h2><button class="btn btn-quiet" id="closeDialog" type="button" aria-label="Fechar formulário">Fechar</button></div><form class="form" id="bookmarkForm"><input id="bookmarkId" type="hidden"><label for="titleInput">Título<input class="field" id="titleInput" required maxlength="300" autocomplete="off"></label><label for="urlInput">URL<input class="field" id="urlInput" type="url" required placeholder="https://exemplo.com" autocomplete="url"><span class="hint">Use um endereço http:// ou https:// válido.</span></label><label for="folderSelect">Pasta ou categoria <span class="hint">(opcional)</span><select class="select" id="folderSelect"><option value="">Sem categoria</option></select><input class="field" id="folderInput" maxlength="180" placeholder="Digite a nova categoria" autocomplete="off" hidden></label><div class="dialog-actions"><button class="btn" id="cancelDialog" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Salvar favorito</button></div></form></dialog>
 <dialog id="categoryDialog" aria-labelledby="categoryTitle"><div class="dialog-head"><h2 id="categoryTitle">Editar categorias</h2><button class="btn btn-quiet" id="closeCategories" type="button" aria-label="Fechar edição de categorias">Fechar</button></div><form class="form" id="categoryForm"><label for="categorySelect">Categoria existente<select class="select" id="categorySelect" required></select></label><label for="categoryName">Novo nome<input class="field" id="categoryName" maxlength="180" required autocomplete="off" placeholder="Digite o novo nome"></label><div class="dialog-actions"><button class="btn" id="cancelCategories" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Renomear categoria</button></div></form></dialog>
@@ -170,6 +179,8 @@ dialog::backdrop { background:#07111699; }
 "use strict";
 const DATA_NODE = document.getElementById("bookmark-data");
 const STORAGE_KEY = "meu-hub-favoritos-v1";
+const VIEW_STATE_KEY = "meu-hub-favoritos-view-v2";
+let expandedThemes = new Set();
 const INITIAL = JSON.parse(DATA_NODE.textContent);
 const INITIAL_SIGNATURE = JSON.stringify(INITIAL);
 let bookmarks = INITIAL;
@@ -193,6 +204,18 @@ function loadDraft() {
     if (parsed?.base===INITIAL_SIGNATURE && Array.isArray(parsed.bookmarks) && parsed.bookmarks.every(x => x && typeof x.title==="string" && typeof x.url==="string" && typeof x.folder==="string")) bookmarks=dedupe(parsed.bookmarks);
   } catch { /* O HTML incorporado segue disponível mesmo sem armazenamento local. */ }
 }
+function loadViewState() {
+  try {
+    const state=JSON.parse(sessionStorage.getItem(VIEW_STATE_KEY)||"{}");
+    if(typeof state.search==="string") $("search").value=state.search;
+    if(typeof state.quick==="string") $("quickFilter").value=state.quick;
+    if(Array.isArray(state.expanded)) expandedThemes=new Set(state.expanded.filter(x=>typeof x==="string"));
+    return typeof state.folder==="string"?state.folder:"";
+  } catch { return ""; }
+}
+function saveViewState() {
+  try { sessionStorage.setItem(VIEW_STATE_KEY,JSON.stringify({search:$("search").value,folder:$("folderFilter").value,quick:$("quickFilter").value,expanded:[...expandedThemes]})); } catch {}
+}
 function dedupe(list) { const seen=new Set(); return list.filter(x => { const key=duplicateKey(x.url); if (seen.has(key)) return false; seen.add(key); return true; }); }
 function cleanFolder(value) { const parts=value.split(" / ").map(x=>x.trim()).filter(Boolean); return parts.filter((part,index)=>part!==parts[index-1]).join(" / "); }
 function themeFor(item) {
@@ -209,33 +232,65 @@ function refreshFilter() {
   folders().forEach(folder=>select.add(new Option(cleanFolder(folder),folder)));
   if ([...select.options].some(o=>o.value===selected)) select.value=selected;
 }
+function normalizeSearch(value) {
+  return value.normalize("NFD").replace(/[̀-ͯ]/g,"").toLocaleLowerCase("pt-BR").trim();
+}
+function highlightText(element,value,terms) {
+  const text=String(value), normalizedParts=[]; let normalized="";
+  for(let i=0;i<text.length;){
+    const point=String.fromCodePoint(text.codePointAt(i)), folded=normalizeSearch(point);
+    normalizedParts.push({start:normalized.length,end:normalized.length+folded.length,sourceStart:i,sourceEnd:i+point.length});
+    normalized+=folded; i+=point.length;
+  }
+  const ranges=[];
+  terms.forEach(term=>{let from=0,at; while((at=normalized.indexOf(term,from))!==-1){
+    const first=normalizedParts.find(part=>part.end>at), last=[...normalizedParts].reverse().find(part=>part.start<at+term.length);
+    if(first&&last) ranges.push([first.sourceStart,last.sourceEnd]); from=at+Math.max(term.length,1);
+  }});
+  ranges.sort((a,b)=>a[0]-b[0]); const merged=[];
+  ranges.forEach(range=>{const prev=merged.at(-1); if(prev&&range[0]<=prev[1]) prev[1]=Math.max(prev[1],range[1]); else merged.push(range.slice());});
+  let cursor=0; merged.forEach(([start,end])=>{element.append(document.createTextNode(text.slice(cursor,start))); const mark=document.createElement("mark"); mark.className="match"; mark.textContent=text.slice(start,end); element.append(mark); cursor=end;});
+  element.append(document.createTextNode(text.slice(cursor)));
+}
 function render() {
   refreshFilter();
   document.body.classList.add("view-tree");
 
-  const query=$("search").value.trim().toLocaleLowerCase("pt-BR"), folder=$("folderFilter").value;
-  const matches=bookmarks.map((item,index)=>({...item,index,theme:themeFor(item)})).filter(x=>(!folder || x.folder===folder) && (!query || (x.title+" "+x.url).toLocaleLowerCase("pt-BR").includes(query)));
+  const query=normalizeSearch($("search").value), terms=query.split(/\s+/).filter(Boolean), folder=$("folderFilter").value;
+  const quick=$("quickFilter").value;
+  $("clearSearch").hidden=!query;
+  let matches=bookmarks.map((item,index)=>({...item,index,theme:themeFor(item)})).filter(x=>{
+    if(folder && x.folder!==folder) return false;
+    if(quick==="uncategorized" && x.folder.trim()) return false;
+    if(quick==="imported" && !importedBookmark(x)) return false;
+    const searchable=normalizeSearch([x.title,x.url,x.folder,x.theme].join(" "));
+    return terms.every(term=>searchable.includes(term));
+  });
   const grid=$("bookmarkGrid"); grid.replaceChildren();
   const groups=new Map();
   matches.forEach(item=>{if(!groups.has(item.theme))groups.set(item.theme,[]);groups.get(item.theme).push(item);});
 
   const sortedThemes = [...groups.entries()].sort(([a],[b])=>a.localeCompare(b,"pt-BR"));
 
-  renderTree(grid, sortedThemes);
+  renderTree(grid, sortedThemes, Boolean(query));
 
   $("count").textContent=`${bookmarks.length} ${bookmarks.length===1?"favorito":"favoritos"}`;
-  $("resultNote").textContent=`Exibindo ${matches.length} de ${bookmarks.length} • ${groups.size} ${groups.size===1?"tema":"temas"}`;
+  $("resultNote").textContent=query?`${matches.length} ${matches.length===1?"resultado":"resultados"} para “${$("search").value.trim()}” • ${groups.size} ${groups.size===1?"tema":"temas"}`:`Exibindo ${matches.length} de ${bookmarks.length} • ${groups.size} ${groups.size===1?"tema":"temas"}`;
   $("empty").hidden=matches.length!==0; grid.hidden=matches.length===0;
+  $("emptyTitle").textContent=bookmarks.length?"Nenhum favorito corresponde aos filtros.":"Sua coleção está vazia.";
+  $("emptyMessage").textContent=bookmarks.length?"Tente outros termos ou limpe os filtros para ver todos os favoritos.":"Importe seus favoritos do navegador ou adicione um link pelo menu.";
+  saveViewState();
 }
 
 function createCard(item) {
   const card=document.createElement("article"); card.className="card";
   const top=document.createElement("div"); top.className="card-top";
-  const title=document.createElement("h3"); title.textContent=item.title;
+  const terms=normalizeSearch($("search").value).split(/\s+/).filter(Boolean);
+  const title=document.createElement("h3"); highlightText(title,item.title,terms);
   const link=document.createElement("a"); link.className="open-link"; link.href=item.url; link.target="_blank"; link.rel="noopener noreferrer"; link.textContent="Abrir ↗"; link.setAttribute("aria-label",`Abrir ${item.title} em nova aba`);
   top.append(title,link); card.append(top);
-  const address=document.createElement("div"); address.className="url"; address.textContent=item.url; card.append(address);
-  if(item.folder){const badge=document.createElement("span"); badge.className="folder"; badge.textContent=cleanFolder(item.folder); card.append(badge);}
+  const address=document.createElement("div"); address.className="url"; highlightText(address,item.url,terms); card.append(address);
+  if(item.folder){const badge=document.createElement("span"); badge.className="folder"; highlightText(badge,cleanFolder(item.folder),terms); card.append(badge);}
   const actions=document.createElement("div"); actions.className="card-actions";
   const edit=document.createElement("button"); edit.className="btn"; edit.type="button"; edit.textContent="Editar"; edit.setAttribute("aria-label",`Editar ${item.title}`); edit.addEventListener("click",()=>openEdit(item.index));
   const remove=document.createElement("button"); remove.className="btn btn-danger"; remove.type="button"; remove.textContent="Excluir"; remove.setAttribute("aria-label",`Excluir ${item.title}`); remove.addEventListener("click",()=>openDelete(item.index));
@@ -284,15 +339,16 @@ function renderList(grid, themes) {
   });
 }
 
-function renderTree(grid, themes) {
+function renderTree(grid, themes, expandAll=false) {
   themes.forEach(([theme,items])=>{
+    const expanded=expandAll||expandedThemes.has(theme);
     const section=document.createElement("section"); section.className="topic-section";
     const heading=document.createElement("div"); heading.className="topic-heading";
-    heading.setAttribute("role","button"); heading.setAttribute("aria-expanded","false"); heading.setAttribute("aria-controls",`tree-${theme.replace(/\s+/g,"-")}`); heading.tabIndex=0;
-    const label=document.createElement("h3"); label.textContent=theme;
+    heading.setAttribute("role","button"); heading.setAttribute("aria-expanded",String(expanded)); heading.setAttribute("aria-controls",`tree-${theme.replace(/\s+/g,"-")}`); heading.tabIndex=0;
+    const label=document.createElement("h3"); highlightText(label,theme,normalizeSearch($("search").value).split(/\s+/).filter(Boolean));
     const total=document.createElement("span"); total.className="topic-count"; total.textContent=`${items.length} ${items.length===1?"link":"links"}`;
     heading.append(label,total); section.append(heading);
-    const cards=document.createElement("div"); cards.className="topic-cards"; cards.id=`tree-${theme.replace(/\s+/g,"-")}`; cards.setAttribute("role","list"); cards.setAttribute("aria-hidden","true");
+    const cards=document.createElement("div"); cards.className="topic-cards"; cards.id=`tree-${theme.replace(/\s+/g,"-")}`; cards.setAttribute("role","list"); cards.setAttribute("aria-hidden",String(!expanded));
     items.forEach(item=>cards.append(createCard(item)));
     section.append(cards); grid.append(section);
 
@@ -300,6 +356,8 @@ function renderTree(grid, themes) {
       const expanded = heading.getAttribute("aria-expanded") === "true";
       heading.setAttribute("aria-expanded", String(!expanded));
       cards.setAttribute("aria-hidden", String(expanded));
+      if(expanded) expandedThemes.delete(theme); else expandedThemes.add(theme);
+      saveViewState();
     };
     heading.addEventListener("click", toggle);
     heading.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
@@ -330,7 +388,7 @@ function openCategories() {
   $("categoryDialog").showModal();
 }
 function openDelete(index) { pendingDelete=index; $("deleteMessage").textContent=`“${bookmarks[index].title}” será removido deste hub. Você poderá recuperar o favorito se ainda não tiver baixado uma nova versão do HTML.`; $("deleteDialog").showModal(); $("confirmDelete").focus(); }
-function saveChanges(message) { const saved=persistDraft(); render(); setStatus(saved?`${message} Baixe o HTML atualizado para tornar a mudança permanente.`:`${message} O armazenamento local está indisponível; baixe o HTML atualizado agora para não perder a mudança.` , saved?"info":"error"); }
+function saveChanges(message) { const saved=persistDraft(); render(); setStatus(saved?`${message} Baixe uma cópia do gerenciador para incorporar a mudança no arquivo.`:`${message} O armazenamento local está indisponível; baixe uma cópia do gerenciador agora para não perder a mudança.` , saved?"info":"error"); }
 function setActionMenu(open) {
   const button=$("menuToggle"), menu=$("actionMenu");
   menu.hidden=!open; button.setAttribute("aria-expanded",String(open));
@@ -346,7 +404,7 @@ function importedBookmark(item) { return item.imported===true || item.folder==="
 $("removeImportedButton").addEventListener("click",()=>{
   const count=bookmarks.filter(importedBookmark).length;
   if(!count){setStatus("Não há favoritos importados para remover.");return;}
-  $("removeImportedMessage").textContent=`Esta ação removerá ${count} favorito(s) importado(s). Ela não pode ser desfeita depois de baixar o HTML atualizado.`;
+  $("removeImportedMessage").textContent=`Esta ação removerá ${count} favorito(s) importado(s). Ela não pode ser desfeita depois de baixar uma cópia do gerenciador.`;
   $("removeImportedDialog").showModal();
 });
 $("confirmRemoveImported").addEventListener("click",()=>{
@@ -378,7 +436,18 @@ $("folderSelect").addEventListener("change",()=>{
   input.hidden=!custom;
   if(custom) input.focus();
 });
-$("search").addEventListener("input",render); $("folderFilter").addEventListener("change",render);
+$("search").addEventListener("input",render);
+$("folderFilter").addEventListener("change",render);
+$("quickFilter").addEventListener("change",render);
+$("clearSearch").addEventListener("click",()=>{ $("search").value=""; render(); $("search").focus(); });
+$("search").addEventListener("keydown",event=>{
+  if(event.key==="Escape" && event.currentTarget.value){ event.preventDefault(); event.currentTarget.value=""; render(); }
+});
+document.addEventListener("keydown",event=>{
+  if((event.ctrlKey||event.metaKey) && event.key.toLocaleLowerCase("pt-BR")==="k"){
+    event.preventDefault(); $("search").focus(); $("search").select();
+  }
+});
 $("bookmarkForm").addEventListener("submit",event=>{
   event.preventDefault();
   const title=$("titleInput").value.trim(), folder=$("folderSelect").value==="__new__"?$("folderInput").value.trim():$("folderSelect").value, id=$("bookmarkId").value;
@@ -392,6 +461,30 @@ $("bookmarkForm").addEventListener("submit",event=>{
 $("confirmDelete").addEventListener("click",()=>{if(pendingDelete===null)return; bookmarks.splice(pendingDelete,1); pendingDelete=null; $("deleteDialog").close(); saveChanges("Favorito excluído.");});
 $("keepBookmark").addEventListener("click",()=>$("deleteDialog").close()); $("closeDelete").addEventListener("click",()=>$("deleteDialog").close());
 $("cancelDialog").addEventListener("click",()=>$("editDialog").close()); $("closeDialog").addEventListener("click",()=>$("editDialog").close());
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
+function exportBrowserBookmarks() {
+  const root={entries:[]}, now=String(Math.floor(Date.now()/1000));
+  bookmarks.forEach(item=>{
+    let node=root;
+    const path=cleanFolder(item.folder).split(" / ").filter(Boolean);
+    path.forEach(name=>{
+      let folder=node.entries.find(entry=>entry.type==="folder"&&entry.name===name);
+      if(!folder){folder={type:"folder",name,node:{entries:[]}};node.entries.push(folder);}
+      node=folder.node;
+    });
+    node.entries.push({type:"bookmark",item});
+  });
+  const renderNode=node=>node.entries.map(entry=>entry.type==="folder"
+    ?`<DT><H3 ADD_DATE="${now}" LAST_MODIFIED="${now}">${escapeHTML(entry.name)}</H3>\n<DL><p>\n${renderNode(entry.node)}\n</DL><p>`
+    :`<DT><A HREF="${escapeHTML(normalizeUrl(entry.item.url))}" ADD_DATE="${now}">${escapeHTML(entry.item.title)}</A>`).join("\n");
+  const html=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Favoritos</TITLE>\n<H1>Favoritos</H1>\n<DL><p>\n${renderNode(root)}\n</DL><p>\n`;
+  const blob=new Blob([html],{type:"text/html;charset=utf-8"}), url=URL.createObjectURL(blob);
+  const anchor=document.createElement("a"); anchor.href=url; anchor.download="favoritos-chrome-firefox.html"; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setStatus("Arquivo de favoritos compatível gerado. Importe-o no Chrome pelo Gerenciador de favoritos ou no Firefox em Biblioteca → Importar e backup → Importar favoritos de HTML.");
+}
+$("exportBookmarksButton").addEventListener("click",exportBrowserBookmarks);
 $("exportButton").addEventListener("click",()=>{
   const fresh=dedupe(bookmarks), json=JSON.stringify(fresh,null,2).replace(/</g,"\\u003c");
   const updated=document.documentElement.outerHTML.replace(/(<script type="application\/json" id="bookmark-data">)[\s\S]*?(<\/script>)/,(_,start,end)=>start+json+end);
@@ -449,8 +542,12 @@ $("importFile").addEventListener("change",async event=>{
 });
 $("themeButton").addEventListener("click",()=>{const root=document.documentElement, dark=root.dataset.theme==="dark" || (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches); root.dataset.theme=dark?"light":"dark"; try{localStorage.setItem("meu-hub-tema",root.dataset.theme);}catch{} });
 try { const theme=localStorage.getItem("meu-hub-tema"); if(theme==="dark"||theme==="light") document.documentElement.dataset.theme=theme; } catch {}
-loadDraft(); render();
-if(bookmarks.length!==INITIAL.length) setStatus("Rascunho local carregado. Baixe o HTML atualizado para incorporar as alterações no arquivo.");
+loadDraft();
+const savedFolder=loadViewState();
+refreshFilter();
+if([...$("folderFilter").options].some(option=>option.value===savedFolder)) $("folderFilter").value=savedFolder;
+render();
+if(bookmarks.length!==INITIAL.length) setStatus("Rascunho local carregado. Baixe uma cópia do gerenciador para incorporar as alterações no arquivo.");
 </script>
 </body>
 </html>
